@@ -18,20 +18,52 @@ package dev.morling.onebrc;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class CalculateAverage_tlanders {
 
-    public record FileEntry(String name, Double temp) { }
-    public record CityTemperatureData(Double min, Double mean, Double max) {}
+    public record CityTemperatureData(double min, double max, double total, int count) {
+    @Override
+    public String toString() {
+        return min + "/" + (Math.round(total / count * 10) / 10.0) + "/" + max;
+    }
+}
+
     private static final String FILE = "./measurements.txt";
 
     public static void main(String[] args) throws IOException {
-        Files.readAllLines(Path.of(FILE))
+        String result = Files.readAllLines(Path.of(FILE))
+                // .parallelStream()
                 .stream()
                 .map(line -> line.split(";"))
-                .map(splitLines -> new FileEntry(splitLines[0], Double.parseDouble(splitLines[1])))
-                .forEach(System.out::println);
+                .reduce(
+                        new TreeMap<String, CityTemperatureData>(),
+                        (Map<String, CityTemperatureData> map, String[] citySplitData) -> {
+                            String city = citySplitData[0];
+                            double temp = Math.round(Double.parseDouble(citySplitData[1]) * 10) / 10.0;
+                            CityTemperatureData cityData = map.get(city);
+                            if (cityData == null) {
+                                var rTemp = Math.round(temp * 10) / 10.0;
+                                cityData = new CityTemperatureData(rTemp, rTemp, rTemp, 1);
+                            }
+                            else {
+                                var min = Math.min(cityData.min(), temp);
+                                var max = Math.max(cityData.max(), temp);
+                                cityData = new CityTemperatureData(min, max, cityData.total() + temp, cityData.count() + 1);
+                            }
+                            map.put(city, cityData);
+                            return map;
+                        },
+                        (map1, map2) -> {
+                            map1.putAll(map2);
+                            return map1;
+                        })
+                .entrySet()
+                .stream()
+                .map(entry -> entry.getKey() + "=" + entry.getValue())
+                .collect(Collectors.joining(", "));
 
-        System.out.println("tlanders done");
+        System.out.println("{" + result + "}");
     }
 }
