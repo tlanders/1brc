@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 public class CalculateAverage_tlanders {
 
@@ -44,11 +45,11 @@ public class CalculateAverage_tlanders {
     private static final String FILE = "./measurements.txt";
 
     public static void main(String[] args) throws IOException {
-        Map<String, CityTemperatureData> result = Files.readAllLines(Path.of(FILE))
-                // .parallelStream()
-                .stream()
+        Map<String, CityTemperatureData> result = Files.lines(Path.of(FILE))
+                .parallel()
                 .reduce(
-                        new TreeMap<>(),
+                        // new TreeMap<>(),
+                        new ConcurrentSkipListMap<>(),
                         (Map<String, CityTemperatureData> map, String line) -> {
                             String[] citySplitData = line.split(";");
                             double temp = Double.parseDouble(citySplitData[1]);
@@ -66,6 +67,7 @@ public class CalculateAverage_tlanders {
                             return map;
                         },
                         (map1, map2) -> {
+                            // System.out.println("combining maps...");
                             map1.putAll(map2);
                             return map1;
                         });
