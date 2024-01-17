@@ -15,11 +15,23 @@
  */
 package dev.morling.onebrc;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 public class CalculateAverage_tlanders {
 
+    public record FileEntry(String name, Double temp) { }
+    public record CityTemperatureData(Double min, Double mean, Double max) {}
     private static final String FILE = "./measurements.txt";
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
+        Files.readAllLines(Path.of(FILE))
+                .stream()
+                .map(line -> line.split(";"))
+                .map(splitLines -> new FileEntry(splitLines[0], Double.parseDouble(splitLines[1])))
+                .forEach(System.out::println);
+
         System.out.println("tlanders done");
     }
 }
